@@ -1,0 +1,218 @@
+plugins {
+    id 'com.android.application' version '8.7.3' apply false
+}
+
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'com.acetoy.kanta'
+    compileSdk 35
+    defaultConfig {
+        applicationId 'com.acetoy.kanta'
+        minSdk 23
+        targetSdk 28
+        versionCode 1
+        versionName '1.0'
+    }
+}
+
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <application android:theme="@style/AppTheme" android:label="kanta.acetoygwapo" android:usesCleartextTraffic="true" android:hardwareAccelerated="true">
+        <activity android:name=".MainActivity" android:configChanges="orientation|screenSize|keyboardHidden" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
+
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>kanta.acetoygwapo — MIDI Karaoke Hub</title>
+<style>
+:root{--pink:#ff69b4;--bg:#0a0a15}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#fff;font:15px Arial,sans-serif}
+.bgv{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;opacity:.2;z-index:-2}body:before{content:"";position:fixed;inset:0;background:linear-gradient(135deg,#42133388,#080811f2);z-index:-1}
+header,.panel,.foot{border:1px solid var(--pink);border-radius:14px;background:#140c1eee;box-shadow:0 0 14px #ff69b433;padding:12px;margin:10px}
+header{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}.neon{color:var(--pink);text-shadow:0 0 10px #ff69b477}.grid{display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:4px}
+@media(max-width:900px){.grid{grid-template-columns:1fr}header{margin:6px}.panel{margin:6px}}
+button,.btn{border:1px solid var(--pink);border-radius:10px;padding:10px;background:#210d22;color:var(--pink);font-weight:bold;cursor:pointer}button:active{background:var(--pink);color:#000}.btn{width:100%;margin-top:8px}.row{display:flex;gap:7px;flex-wrap:wrap;align-items:center}.row button{flex:1}.small{font-size:12px;opacity:.75}input,select{background:#080811;color:#fff;border:1px solid #aa4b85;border-radius:8px;padding:9px;max-width:100%}
+#list,#queue{max-height:38vh;overflow:auto}.song{padding:9px;border-bottom:1px solid #ffffff18;cursor:pointer;display:flex;justify-content:space-between;gap:8px}.song.active{background:#ff69b4;color:#000;border-radius:6px}.disp{text-align:center;font-size:42px;letter-spacing:6px;padding:14px;border:2px solid var(--pink);border-radius:12px;margin:12px 0;background:#0008}.keys{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.key{font-size:23px;padding:16px}.enter{background:var(--pink);color:#000}.muted{opacity:.65}#singScreen{display:none;position:fixed;inset:0;background:#000;z-index:10;flex-direction:column}#singScreen.show{display:flex}.singbg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.48}.singtop,.singbottom{z-index:2;padding:12px;display:flex;justify-content:space-between;gap:8px;align-items:center}.lyrics{position:relative;z-index:2;flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:20px}.lyrics h1{font-size:clamp(30px,6vw,60px);color:var(--pink);text-shadow:0 0 18px var(--pink)}.lyrics p{font-size:clamp(18px,3vw,30px);white-space:pre-wrap}.hidden{display:none!important}
+</style></head><body>
+<video class="bgv" id="bgv" muted loop playsinline></video>
+<header><div><div class="neon" style="font-size:25px;font-weight:900">🎤 kanta.acetoygwapo</div><div class="small">MIDI Karaoke Hub • Android local-folder edition</div></div><div><div class="neon">LOCAL FILES • MIDI • BGV</div><div id="status" class="small">Choose your KaraokePro folder to begin.</div></div></header>
+<div class="grid">
+<section class="panel"><h3 class="neon">SONGBOOK</h3><div class="row"><button id="pickFolder">📁 Choose KaraokePro folder</button><button id="pickFiles">＋ Add files</button><input id="fileInput" type="file" multiple accept=".mid,.midi,.kar,.mp4,.webm,.sf2,.txt,.lrc" class="hidden"></div><p class="small">Expected folders: songs/, bgv/, soundfonts/, idx/. Scan includes nested folders where browser folder access is available.</p><input id="search" placeholder="Search title / artist / song number" style="width:100%;margin:8px 0"><div id="list"></div><div class="row"><button id="pdf">📄 Print / Save PDF</button><button id="exportIndex">⬇ Export songs.idx</button></div></section>
+<section class="panel"><h3 class="neon" style="text-align:center">ENTER SONG NUMBER</h3><div id="disp" class="disp">____</div><div class="keys" id="keys"></div><div id="preview" class="panel small">Select a song or enter its number.</div><div class="row"><button id="play">▶ Play MIDI</button><button id="stop">■ Stop</button></div><div class="row"><button id="keyDown">Key −</button><span id="keyLabel">Key: 0</span><button id="keyUp">Key +</button><button id="tempoDown">Tempo −</button><span id="tempoLabel">100%</span><button id="tempoUp">Tempo +</button></div><div class="small" style="margin-top:8px">MIDI sound uses browser synthesizer if available. SF2 loading depends on browser support; this page does not claim FluidR3 is active unless an actual synth is connected.</div></section>
+<section class="panel"><h3 class="neon">RESERVE / QUEUE <span id="qCount" class="small">0 queued</span></h3><div id="queue"></div><div class="row"><button id="clearQ">Clear queue</button><button id="playNext">Play next</button></div><hr style="border-color:#ffffff22;margin:14px 0"><h3 class="neon">NOW PLAYING</h3><div id="nowPlay">No song selected</div><p class="small" id="playState">Playback stopped.</p><div class="row"><button id="chooseBgv">Choose BGV video</button><button id="toggleBgv">BGV on/off</button><button id="chooseSf2">Choose SF2</button></div><div class="small" id="sf2Status">No SoundFont loaded.</div><div class="row"><button id="chooseLyrics">Choose lyrics (.txt/.lrc)</button><button id="showSing">Karaoke screen</button></div></section>
+</div>
+<div class="foot small">kanta.acetoygwapo • local-first demo • Files remain on your device; browser permissions required.</div>
+<div id="singScreen"><video id="singBgv" class="singbg" muted loop playsinline></video><div class="singtop"><div class="neon">NOW PLAYING: <span id="singNum"></span> • <span id="singTitle"></span></div><button id="closeSing">✕ Close</button></div><div class="lyrics"><h1 id="lyr1">Choose a song</h1><p id="lyr2">Choose a .kar file with embedded lyrics, or load a .txt/.lrc lyrics file.</p></div><div class="singbottom"><span id="singHint" class="small">BGV ready</span><button id="singPlay">▶ Play</button><button id="singStop">■ Stop</button></div></div>
+<script>
+const $=id=>document.getElementById(id);
+let rootHandle=null, allFiles=[], songs=[], selected=null, queue=[], cur="", keyShift=0, tempo=1, bgvURL=null, sf2File=null, lyricsText="", lyricsLines=[], lyricTimer=null, midiPlayer=null, bgvOn=true;
+const supportedDir=!!window.showDirectoryPicker;
+function setStatus(s){$('status').textContent=s}
+function ext(name){return (name.split('.').pop()||'').toLowerCase()}
+function cleanTitle(name){return name.replace(/\.(mid|midi|kar)$/i,'').replace(/[_-]+/g,' ').trim()}
+function metaFromName(file,path){let title=cleanTitle(file.name),num=null,artist='Unknown',genre='Local',m=title.match(/^(\d{1,5})\s*[-._ ]\s*(.*)$/);if(m){num=Number(m[1]);title=m[2]}return {num,title,artist,genre,type:'.'+ext(file.name),path,file,handle:null}}
+async function walk(dir,path=''){for await(const entry of dir.values()){const p=path?path+'/'+entry.name:entry.name;if(entry.kind==='directory'){await walk(entry,p)}else{const file=await entry.getFile();allFiles.push({name:entry.name,path:p,file,handle:entry})}}}
+function findFileByExt(f){return ['mid','midi','kar'].includes(ext(f.name))}
+function assignSongs(){const old=new Map(songs.map(s=>[s.path,s.num]));songs=allFiles.filter(findFileByExt).map((f,i)=>{const s=metaFromName(f.file,f.path);s.handle=f.handle;s.num=old.get(f.path)||s.num||1001+i;return s}).sort((a,b)=>a.num-b.num||a.title.localeCompare(b.title));renderList();setStatus(`${songs.length} MIDI/KAR files • ${allFiles.filter(x=>ext(x.name)==='mp4'||ext(x.name)==='webm').length} videos found.`)}
+async function scanFolder(){if(!supportedDir){alert('Folder scan is not supported in this browser. Use Chrome on Android with directory picker support, or Add files to select files manually.');return}try{rootHandle=await window.showDirectoryPicker({mode:'readwrite'});allFiles=[];await walk(rootHandle);assignSongs();const vid=allFiles.find(x=>['mp4','webm'].includes(ext(x.name))&&/bgv|background/i.test(x.path))||allFiles.find(x=>['mp4','webm'].includes(ext(x.name)));if(vid)useBgv(vid.file);const sf=allFiles.find(x=>ext(x.name)==='sf2');if(sf){$('sf2Status').textContent='SF2 found: '+sf.path+' (not yet connected to a synth engine).'} }catch(e){if(e.name!=='AbortError')alert('Could not scan folder: '+e.message)}}
+function renderList(){const q=$('search').value.toLowerCase();$('list').innerHTML='';songs.filter(s=>(`${s.num} ${s.title} ${s.artist} ${s.path}`).toLowerCase().includes(q)).forEach(s=>{const d=document.createElement('div');d.className='song'+(selected===s?' active':'');d.innerHTML=`<span><b>${s.num}</b> · ${escapeHtml(s.title)}<div class="small">${escapeHtml(s.path)}</div></span><span>＋</span>`;d.onclick=e=>{selectSong(s);if(e.target.closest('span:last-child'))addQueue(s)};$('list').appendChild(d)});if(!songs.length)$('list').innerHTML='<div class="small">No .mid/.midi/.kar files found yet. Choose the main KaraokePro folder.</div>'}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function selectSong(s){selected=s;cur=String(s.num);$('disp').textContent=cur.padEnd(4,'_');$('preview').innerHTML=`<b class="neon">${s.num} — ${escapeHtml(s.title)}</b><div>${escapeHtml(s.path)}</div>`;renderList()}
+function press(n){if(cur.length>=5)return;cur+=n;$('disp').textContent=cur.padEnd(4,'_');const s=songs.find(x=>String(x.num)===cur);if(s)selectSong(s);else $('preview').textContent='Looking for song number '+cur}
+function enterNum(){const s=songs.find(x=>String(x.num)===cur);if(s){selectSong(s);playSong(s)}else alert('Song number not found. Scan your folder or check the song number.')}
+function addQueue(s){queue.push(s);renderQueue()}
+function renderQueue(){$('queue').innerHTML='';queue.forEach((s,i)=>{const d=document.createElement('div');d.className='song';d.innerHTML=`<span>${i+1}. ${escapeHtml(s.title)}</span><button>Play</button>`;d.querySelector('button').onclick=()=>{queue.splice(i,1);renderQueue();playSong(s)};$('queue').appendChild(d)});$('qCount').textContent=queue.length+' queued'}
+function clearQueue(){queue=[];renderQueue()}
+async function loadScript(src){return new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=src;s.onload=resolve;s.onerror=()=>reject(new Error('Could not load '+src));document.head.appendChild(s)})}
+async function ensureMidi(){if(midiPlayer)return true;try{if(!window.MidiPlayer||!window.MidiPlayer.Player)await loadScript('https://cdn.jsdelivr.net/npm/midi-player-js@2.0.16/build/MidiPlayer.min.js');if(!window.MidiPlayer||!window.MidiPlayer.Player)throw Error('MIDI player library unavailable');midiPlayer=new MidiPlayer.Player(event=>{if(event.name==='Note on'){} });midiPlayer.on('endOfFile',()=>{$('playState').textContent='MIDI finished.';if(queue.length)playSong(queue.shift())});return true}catch(e){$('playState').textContent='MIDI engine unavailable: '+e.message;alert('MIDI playback engine could not load. Check internet access. For dependable SF2 audio, use a dedicated synth integration or native app.');return false}}
+async function playSong(s){if(!s)return;selected=s;renderList();$('nowPlay').textContent=s.num+' — '+s.title;$('singNum').textContent=s.num;$('singTitle').textContent=s.title;try{const ok=await ensureMidi();if(!ok)return;const data=await s.file.arrayBuffer();midiPlayer.stop();midiPlayer.loadArrayBuffer(data);midiPlayer.setTempo(tempo*100);midiPlayer.play();$('playState').textContent='Playing MIDI (browser synth; SF2 not guaranteed).';$('singHint').textContent='MIDI playback active';$('lyr1').textContent=s.title; if(s.file.name.toLowerCase().endsWith('.kar')) $('lyr2').textContent='KAR selected. Embedded lyric rendering requires a lyric-capable MIDI/KAR parser.';}catch(e){alert('Could not play this MIDI/KAR file: '+e.message)}}
+function stopSong(){if(midiPlayer)try{midiPlayer.stop()}catch(e){}$('playState').textContent='Playback stopped.';if(lyricTimer)clearInterval(lyricTimer)}
+function useBgv(file){if(bgvURL)URL.revokeObjectURL(bgvURL);bgvURL=URL.createObjectURL(file);$('bgv').src=bgvURL;$('singBgv').src=bgvURL;if(bgvOn){$('bgv').play().catch(()=>{});$('singBgv').play().catch(()=>{})}}
+function toggleBgv(){bgvOn=!bgvOn;[$('bgv'),$('singBgv')].forEach(v=>{v.muted=true;if(bgvOn)v.play().catch(()=>{});else v.pause()});$('toggleBgv').textContent=bgvOn?'BGV on/off (ON)':'BGV on/off (OFF)'}
+function printPdf(){const w=window.open('','_blank');if(!w){alert('Allow pop-ups to print the songbook.');return}const rows=songs.map(s=>`<tr><td>${s.num}</td><td>${escapeHtml(s.title)}</td><td>${escapeHtml(s.artist)}</td><td>${escapeHtml(s.genre)}</td><td>${escapeHtml(s.type)}</td></tr>`).join('');w.document.write(`<!doctype html><html><head><title>kanta.acetoygwapo Songbook</title><style>body{font:12px Arial;padding:20px}h1{font-size:20px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #888;padding:5px;text-align:left}th{background:#eee}</style></head><body><h1>kanta.acetoygwapo — Songbook</h1><p>${songs.length} songs</p><table><thead><tr><th>No.</th><th>Title</th><th>Artist</th><th>Genre</th><th>Type</th></tr></thead><tbody>${rows}</tbody></table><script>window.onload=()=>window.print()<\/script></body></html>`);w.document.close()}
+async function exportIndex(){const data=songs.map(s=>`${s.num}\t${s.title}\t${s.artist}\t${s.genre}\t${s.type}\t${s.path}`).join('\n');if(rootHandle){try{const idx=await rootHandle.getDirectoryHandle('idx',{create:true});const h=await idx.getFileHandle('songs.idx',{create:true});const wr=await h.createWritable();await wr.write(data);await wr.close();alert('Saved idx/songs.idx in selected folder.')}catch(e){downloadText(data,'songs.idx')}}else downloadText(data,'songs.idx')}
+function downloadText(data,name){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type:'text/plain'}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+function handleManualFiles(files){for(const file of files){allFiles.push({name:file.name,path:file.webkitRelativePath||file.name,file,handle:null})}assignSongs();const v=[...files].find(f=>['mp4','webm'].includes(ext(f.name)));if(v)useBgv(v);const sf=[...files].find(f=>ext(f.name)==='sf2');if(sf){sf2File=sf;$('sf2Status').textContent='Selected '+sf.name+'; requires a SoundFont-capable synthesizer to play with it.'}const lyr=[...files].find(f=>['txt','lrc'].includes(ext(f.name)));if(lyr)readLyrics(lyr)}
+function readLyrics(file){const r=new FileReader();r.onload=()=>{lyricsText=String(r.result||'');lyricsLines=lyricsText.split(/\r?\n/).filter(Boolean);$('lyr2').textContent=lyricsLines.join('\n')||'No lyrics found.'};r.readAsText(file)}
+$('pickFolder').onclick=scanFolder;$('pickFiles').onclick=()=>$('fileInput').click();$('fileInput').onchange=e=>handleManualFiles(e.target.files);$('search').oninput=renderList;
+$('keys').innerHTML=['1','2','3','4','5','6','7','8','9','C','0','ENTER'].map(n=>`<button class="key ${n==='ENTER'?'enter':''}" data-k="${n}">${n}</button>`).join('');$('keys').onclick=e=>{const n=e.target.dataset.k;if(!n)return;if(n==='C'){cur='';$('disp').textContent='____';return}if(n==='ENTER'){enterNum();return}press(n)};
+$('play').onclick=()=>selected?playSong(selected):enterNum();$('stop').onclick=stopSong;$('clearQ').onclick=clearQueue;$('playNext').onclick=()=>{if(queue.length)playSong(queue.shift());else alert('Queue is empty');renderQueue()};
+$('keyUp').onclick=()=>{$('keyLabel').textContent='Key: '+(++keyShift)};$('keyDown').onclick=()=>{$('keyLabel').textContent='Key: '+(--keyShift)};$('tempoUp').onclick=()=>{tempo=Math.min(2,tempo+.1);$('tempoLabel').textContent=Math.round(tempo*100)+'%';if(midiPlayer)midiPlayer.setTempo(tempo*100)};$('tempoDown').onclick=()=>{tempo=Math.max(.5,tempo-.1);$('tempoLabel').textContent=Math.round(tempo*100)+'%';if(midiPlayer)midiPlayer.setTempo(tempo*100)};
+$('pdf').onclick=printPdf;$('exportIndex').onclick=exportIndex;$('chooseBgv').onclick=()=>$('fileInput').click();$('toggleBgv').onclick=toggleBgv;$('chooseSf2').onclick=()=>$('fileInput').click();$('chooseLyrics').onclick=()=>$('fileInput').click();
+$('showSing').onclick=()=>{$('singScreen').classList.add('show');if(selected){$('singNum').textContent=selected.num;$('singTitle').textContent=selected.title;$('lyr1').textContent=selected.title}};$('closeSing').onclick=()=>$('singScreen').classList.remove('show');$('singPlay').onclick=()=>selected&&playSong(selected);$('singStop').onclick=stopSong;
+if(!supportedDir){$('pickFolder').textContent='📁 Folder scan unavailable';setStatus('Browser folder API unavailable. Use Add files or open in a supported Chrome-based browser.')}
+</script></body></html>
+package com.acetoy.kanta;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.webkit.WebChromeClient;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import android.webkit.ValueCallback;
+import android.content.Intent;
+import android.net.Uri;
+
+public class MainActivity extends Activity {
+    private WebView webView;
+    private ValueCallback<Uri[]> fileCallback;
+    private static final int FILE_CHOOSER_REQUEST = 1001;
+
+    @Override public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        webView = new WebView(this);
+        setContentView(webView);
+        WebSettings settings = webView.getSettings();
+        settings.setJavaScriptEnabled(true);
+        settings.setDomStorageEnabled(true);
+        settings.setAllowFileAccess(true);
+        settings.setAllowContentAccess(true);
+        settings.setMediaPlaybackRequiresUserGesture(false);
+        settings.setSupportMultipleWindows(true);
+        webView.setWebViewClient(new WebViewClient());
+        webView.setWebChromeClient(new WebChromeClient() {
+            @Override public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, FileChooserParams params) {
+                if (fileCallback != null) fileCallback.onReceiveValue(null);
+                fileCallback = callback;
+                Intent intent = params.createIntent();
+                try { startActivityForResult(intent, FILE_CHOOSER_REQUEST); }
+                catch (Exception e) { fileCallback = null; return false; }
+                return true;
+            }
+        });
+        webView.loadUrl("file:///android_asset/index.html");
+    }
+
+    @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == FILE_CHOOSER_REQUEST && fileCallback != null) {
+            Uri[] result = WebChromeClient.FileChooserParams.parseResult(resultCode, data);
+            fileCallback.onReceiveValue(result);
+            fileCallback = null;
+        }
+    }
+
+    @Override public void onBackPressed() {
+        if (webView != null && webView.canGoBack()) webView.goBack();
+        else super.onBackPressed();
+    }
+}
+
+<resources>
+    <style name="AppTheme" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:colorAccent">#ff69b4</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:statusBarColor">#0a0a15</item>
+        <item name="android:navigationBarColor">#0a0a15</item>
+    </style>
+</resources>
+
+pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
+dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }
+rootProject.name = "KantaAcetoygwapo"
+include(":app")
+
+# Kanta Acetoygwapo Android project
+
+This is an Android WebView wrapper around the Kanta Acetoygwapo HTML karaoke interface. It is source code, not a prebuilt APK.
+
+## Build in Android Studio
+1. Open this folder in Android Studio.
+2. Allow Gradle sync and install the requested Android SDK components.
+3. Choose **Build > Build Bundle(s) / APK(s) > Build APK(s)**.
+4. The debug APK should be at `app/build/outputs/apk/debug/app-debug.apk`.
+
+## Build in the cloud (no Android Studio on your computer)
+The `.github/workflows/build-apk.yml` workflow can build the debug APK using GitHub Actions.
+1. Create a GitHub repository and upload the contents of this project to its `main` branch.
+2. Open the repository's **Actions** tab and select **Build Kanta Acetoygwapo APK**.
+3. Run the workflow, then open the completed run and download the `kanta-acetoygwapo-debug-apk` artifact.
+4. Extract the downloaded artifact ZIP to get `app-debug.apk`, then transfer it to your Android device and install it.
+
+## Important limitations
+- The generated APK is a WebView wrapper around the supplied HTML, not a native karaoke engine.
+- MIDI playback relies on the HTML app's existing implementation and internet/CDN access where required.
+- SoundFont (.sf2) synthesis, synchronized karaoke lyrics, and key-shifting are not guaranteed by this wrapper.
+- The APK is unsigned for Play Store release (Android can install a debug APK after allowing installation from that source).
+
+org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
+android.useAndroidX=true
+
+name: Build Kanta Acetoygwapo APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Install Android platform and build tools
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - name: Build debug APK
+        run: gradle --no-daemon assembleDebug
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kanta-acetoygwapo-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
